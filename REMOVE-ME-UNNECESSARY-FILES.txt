@@ -1,0 +1,8 @@
+The following files are likely unnecessary or mock/demo files and can be removed if not needed:
+
+- artifacts/mockup-sandbox/
+- artifacts/mockup-sandbox/src/.generated/mockup-components.ts
+- attached_assets/wawra-logo.png
+- attached_assets/EAA61C5C-1D4F-4629-A437-4915BA0EEA1F_1775378437332.jpeg
+
+If you confirm, I will delete them.
