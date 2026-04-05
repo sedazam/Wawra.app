@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Edit2, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const categorySchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -23,31 +24,26 @@ const categorySchema = z.object({
 type CategoryFormValues = z.infer<typeof categorySchema>;
 
 export default function AdminCategories() {
+  const { t } = useLanguage();
   const { data: categories, isLoading } = useListCategories();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
+
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
-  
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
-    defaultValues: {
-      name: "",
-      slug: "",
-      description: "",
-      color: "#000000"
-    }
+    defaultValues: { name: "", slug: "", description: "", color: "#000000" }
   });
 
-  // Auto-generate slug from name
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>, onChange: (...event: any[]) => void) => {
     onChange(e);
-    if (!editingId) { // Only auto-generate on create
+    if (!editingId) {
       const generatedSlug = e.target.value
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
@@ -74,10 +70,10 @@ export default function AdminCategories() {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this category?")) {
+    if (confirm(t.confirmDelete)) {
       deleteCategory.mutate({ id }, {
         onSuccess: () => {
-          toast({ title: "Category deleted" });
+          toast({ title: t.categoryDeleted });
           queryClient.invalidateQueries({ queryKey: getListCategoriesQueryKey() });
         }
       });
@@ -94,7 +90,7 @@ export default function AdminCategories() {
     if (editingId) {
       updateCategory.mutate({ id: editingId, data: dataToSubmit }, {
         onSuccess: () => {
-          toast({ title: "Category updated" });
+          toast({ title: t.categoryUpdated });
           setIsDialogOpen(false);
           queryClient.invalidateQueries({ queryKey: getListCategoriesQueryKey() });
         }
@@ -102,7 +98,7 @@ export default function AdminCategories() {
     } else {
       createCategory.mutate({ data: dataToSubmit }, {
         onSuccess: () => {
-          toast({ title: "Category created" });
+          toast({ title: t.categoryCreated });
           setIsDialogOpen(false);
           queryClient.invalidateQueries({ queryKey: getListCategoriesQueryKey() });
         }
@@ -114,21 +110,21 @@ export default function AdminCategories() {
     <AdminLayout>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-3xl font-medium tracking-tight mb-2">Categories</h1>
-          <p className="text-muted-foreground">Manage topics for your audio content.</p>
+          <h1 className="font-serif text-3xl font-medium tracking-tight mb-2">{t.categoriesTitle}</h1>
+          <p className="text-muted-foreground">{t.categoriesSubtitle}</p>
         </div>
-        
+
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreateDialog} data-testid="btn-create-category">
-              <Plus className="w-4 h-4 mr-2" /> New Category
+              <Plus className="w-4 h-4 mr-2" /> {t.newCategory}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingId ? "Edit Category" : "Create Category"}</DialogTitle>
+              <DialogTitle>{editingId ? t.editCategory : t.createCategory}</DialogTitle>
             </DialogHeader>
-            
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
                 <FormField
@@ -136,7 +132,7 @@ export default function AdminCategories() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name</FormLabel>
+                      <FormLabel>{t.nameLabel}</FormLabel>
                       <FormControl>
                         <Input {...field} onChange={e => handleNameChange(e, field.onChange)} data-testid="input-category-name" />
                       </FormControl>
@@ -144,13 +140,13 @@ export default function AdminCategories() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="slug"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Slug</FormLabel>
+                      <FormLabel>{t.slugLabel}</FormLabel>
                       <FormControl>
                         <Input {...field} data-testid="input-category-slug" />
                       </FormControl>
@@ -158,13 +154,13 @@ export default function AdminCategories() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>{t.descriptionLabel}</FormLabel>
                       <FormControl>
                         <Textarea {...field} className="resize-none" rows={3} data-testid="input-category-description" />
                       </FormControl>
@@ -172,13 +168,13 @@ export default function AdminCategories() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="color"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Accent Color (Hex)</FormLabel>
+                      <FormLabel>{t.accentColor}</FormLabel>
                       <div className="flex gap-2">
                         <FormControl>
                           <Input type="color" className="w-12 p-1 h-10" {...field} data-testid="input-category-color-picker" />
@@ -191,15 +187,15 @@ export default function AdminCategories() {
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="pt-4 flex justify-end">
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     disabled={createCategory.isPending || updateCategory.isPending}
                     data-testid="btn-save-category"
                   >
                     {(createCategory.isPending || updateCategory.isPending) && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                    {editingId ? "Save Changes" : "Create"}
+                    {editingId ? t.saveChanges : t.create}
                   </Button>
                 </div>
               </form>
@@ -215,14 +211,14 @@ export default function AdminCategories() {
           </div>
         ) : categories?.length === 0 ? (
           <div className="p-12 text-center text-muted-foreground">
-            <p>No categories found. Create one to get started.</p>
+            <p>{t.noCategoriesYet}</p>
           </div>
         ) : (
           <div className="divide-y">
             {categories?.map(category => (
               <div key={category.id} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div 
+                  <div
                     className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-white text-xs font-medium"
                     style={{ backgroundColor: category.color || 'hsl(var(--primary))' }}
                   >
@@ -232,18 +228,18 @@ export default function AdminCategories() {
                     <h3 className="font-medium text-lg">{category.name}</h3>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                       <span className="font-mono bg-muted px-1.5 py-0.5 rounded">/{category.slug}</span>
-                      <span>{category.audioCount} audios</span>
+                      <span>{category.audioCount} {t.audiosUnit}</span>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Button variant="ghost" size="icon" onClick={() => openEditDialog(category)} data-testid={`btn-edit-category-${category.id}`}>
                     <Edit2 className="w-4 h-4" />
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() => handleDelete(category.id)}
                     disabled={deleteCategory.isPending}

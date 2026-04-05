@@ -6,10 +6,12 @@ import { AudioGrid } from "@/components/audio/AudioGrid";
 import { formatDate } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function AudioDetail() {
   const params = useParams<{ slug: string }>();
-  
+  const { t } = useLanguage();
+
   const { data: audio, isLoading } = useGetAudioBySlug(params.slug!, {
     query: {
       enabled: !!params.slug,
@@ -19,11 +21,7 @@ export default function AudioDetail() {
 
   const { data: relatedAudios } = useListAudios(
     { categoryId: audio?.categoryId || undefined, limit: 4 },
-    {
-      query: {
-        enabled: !!audio?.categoryId
-      }
-    }
+    { query: { enabled: !!audio?.categoryId } }
   );
 
   if (isLoading) {
@@ -43,10 +41,10 @@ export default function AudioDetail() {
     return (
       <MainLayout>
         <div className="container mx-auto px-4 py-24 text-center max-w-xl">
-          <h1 className="font-serif text-3xl mb-4">Audio not found</h1>
-          <p className="text-muted-foreground mb-8">The audio you're looking for doesn't exist or has been removed.</p>
+          <h1 className="font-serif text-3xl mb-4">{t.audioNotFound}</h1>
+          <p className="text-muted-foreground mb-8">{t.audioNotFoundDesc}</p>
           <Link href="/browse" className="text-primary hover:underline">
-            Browse all audios
+            {t.browseAllAudios}
           </Link>
         </div>
       </MainLayout>
@@ -57,7 +55,7 @@ export default function AudioDetail() {
     <MainLayout>
       <div className="bg-card border-b relative overflow-hidden">
         {audio.coverImageUrl && (
-          <div 
+          <div
             className="absolute inset-0 opacity-5 blur-3xl scale-110 pointer-events-none"
             style={{ backgroundImage: `url(${audio.coverImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
           />
@@ -72,13 +70,13 @@ export default function AudioDetail() {
               </div>
             )}
           </div>
-          
+
           <div className="flex-1 flex flex-col justify-center py-4">
             <div className="flex items-center gap-3 mb-4">
               {audio.categoryName && (
                 <Link href={`/category/${audio.categorySlug}`}>
-                  <Badge 
-                    variant="secondary" 
+                  <Badge
+                    variant="secondary"
                     className="font-medium hover:bg-secondary/80 transition-colors cursor-pointer"
                     style={audio.categoryColor ? { backgroundColor: `${audio.categoryColor}20`, color: audio.categoryColor } : {}}
                   >
@@ -90,11 +88,11 @@ export default function AudioDetail() {
                 {formatDate(audio.publishDate || audio.createdAt)}
               </span>
             </div>
-            
+
             <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-tight mb-6 tracking-tight">
               {audio.title}
             </h1>
-            
+
             <AudioPlayer audio={audio} />
           </div>
         </div>
@@ -103,17 +101,17 @@ export default function AudioDetail() {
       <div className="container mx-auto px-4 py-16 max-w-4xl">
         {audio.description && (
           <div className="prose prose-stone dark:prose-invert max-w-none text-lg leading-relaxed mb-20 font-light text-muted-foreground">
-            <h2 className="font-serif text-2xl text-foreground font-normal mb-6">About</h2>
+            <h2 className="font-serif text-2xl text-foreground font-normal mb-6">{t.about}</h2>
             <div className="whitespace-pre-line">{audio.description}</div>
           </div>
         )}
-        
+
         {relatedAudios && relatedAudios.items.length > 1 && (
           <div>
-            <h3 className="font-serif text-2xl font-normal mb-8 border-b pb-4">You might also like</h3>
-            <AudioGrid 
-              audios={relatedAudios.items.filter(a => a.id !== audio.id).slice(0, 4)} 
-              emptyMessage="No related audios." 
+            <h3 className="font-serif text-2xl font-normal mb-8 border-b pb-4">{t.youMightAlsoLike}</h3>
+            <AudioGrid
+              audios={relatedAudios.items.filter(a => a.id !== audio.id).slice(0, 4)}
+              emptyMessage={t.noRelated}
             />
           </div>
         )}

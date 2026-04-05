@@ -12,8 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Music, Image as ImageIcon, X } from "lucide-react";
+import { Loader2, Music, Image as ImageIcon } from "lucide-react";
 import { formatDuration } from "@/lib/format";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const audioSchema = z.object({
   title: z.string().min(2, "Title is required"),
@@ -29,29 +30,24 @@ type AudioFormValues = z.infer<typeof audioSchema>;
 export default function AdminUpload() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const { data: categories } = useListCategories();
-  
+
   const createAudio = useCreateAudio();
   const uploadAudio = useUploadAudioFile();
   const uploadImage = useUploadImageFile();
-  
+
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [audioDuration, setAudioDuration] = useState<number>(0);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  
+
   const audioInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<AudioFormValues>({
     resolver: zodResolver(audioSchema),
-    defaultValues: {
-      title: "",
-      slug: "",
-      description: "",
-      published: false,
-      featured: false,
-    }
+    defaultValues: { title: "", slug: "", description: "", published: false, featured: false }
   });
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>, onChange: (...event: any[]) => void) => {
@@ -67,8 +63,6 @@ export default function AdminUpload() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setAudioFile(file);
-      
-      // Get duration
       const url = URL.createObjectURL(file);
       const audio = new Audio(url);
       audio.onloadedmetadata = () => {
@@ -82,37 +76,27 @@ export default function AdminUpload() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setCoverImage(file);
-      
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverPreview(reader.result as string);
-      };
+      reader.onloadend = () => { setCoverPreview(reader.result as string); };
       reader.readAsDataURL(file);
     }
   };
 
   const onSubmit = async (values: AudioFormValues) => {
     if (!audioFile) {
-      toast({
-        title: "Audio required",
-        description: "Please select an audio file to upload.",
-        variant: "destructive"
-      });
+      toast({ title: t.audioRequired, description: t.audioRequiredDesc, variant: "destructive" });
       return;
     }
 
     try {
-      // 1. Upload audio
       const audioRes = await uploadAudio.mutateAsync({ data: { file: audioFile } });
-      
-      // 2. Upload image if selected
+
       let imageUrl = null;
       if (coverImage) {
         const imageRes = await uploadImage.mutateAsync({ data: { file: coverImage } });
         imageUrl = imageRes.url;
       }
-      
-      // 3. Create record
+
       await createAudio.mutateAsync({
         data: {
           title: values.title,
@@ -127,17 +111,13 @@ export default function AdminUpload() {
           publishDate: values.published ? new Date().toISOString() : null,
         }
       });
-      
-      toast({ title: "Audio uploaded successfully" });
+
+      toast({ title: t.uploadSuccess });
       setLocation("/admin");
-      
+
     } catch (error) {
       console.error(error);
-      toast({
-        title: "Upload failed",
-        description: "An error occurred during upload. Please try again.",
-        variant: "destructive"
-      });
+      toast({ title: t.uploadFailed, description: t.uploadFailedDesc, variant: "destructive" });
     }
   };
 
@@ -146,33 +126,32 @@ export default function AdminUpload() {
   return (
     <AdminLayout>
       <div className="mb-8">
-        <h1 className="font-serif text-3xl font-medium tracking-tight mb-2">Upload Audio</h1>
-        <p className="text-muted-foreground">Add a new talk, story, or reflection to your library.</p>
+        <h1 className="font-serif text-3xl font-medium tracking-tight mb-2">{t.uploadTitle}</h1>
+        <p className="text-muted-foreground">{t.uploadSubtitle}</p>
       </div>
 
       <div className="bg-card border rounded-xl shadow-sm p-6 md:p-8">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            
-            {/* File Uploads */}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <FormLabel className="text-base">Audio File *</FormLabel>
-                <div 
+                <FormLabel className="text-base">{t.audioFileLabel}</FormLabel>
+                <div
                   className={`border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center cursor-pointer transition-colors ${audioFile ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
                   onClick={() => audioInputRef.current?.click()}
                 >
                   <input type="file" accept="audio/*" className="hidden" ref={audioInputRef} onChange={handleAudioSelect} data-testid="input-audio-file" />
-                  
+
                   {audioFile ? (
                     <>
                       <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mb-3">
                         <Music className="w-6 h-6" />
                       </div>
                       <p className="font-medium text-sm truncate max-w-full px-4">{audioFile.name}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Duration: {formatDuration(audioDuration)}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t.duration} {formatDuration(audioDuration)}</p>
                       <Button variant="ghost" size="sm" className="mt-4" onClick={(e) => { e.stopPropagation(); setAudioFile(null); setAudioDuration(0); }} data-testid="btn-remove-audio">
-                        Remove
+                        {t.remove}
                       </Button>
                     </>
                   ) : (
@@ -180,27 +159,27 @@ export default function AdminUpload() {
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
                         <Music className="w-6 h-6 text-muted-foreground" />
                       </div>
-                      <p className="font-medium text-sm">Click to select audio file</p>
-                      <p className="text-xs text-muted-foreground mt-1">MP3, WAV, OGG up to 50MB</p>
+                      <p className="font-medium text-sm">{t.clickToSelectAudio}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t.audioFileHint}</p>
                     </>
                   )}
                 </div>
               </div>
-              
+
               <div className="space-y-3">
-                <FormLabel className="text-base">Cover Art</FormLabel>
-                <div 
+                <FormLabel className="text-base">{t.coverArtLabel}</FormLabel>
+                <div
                   className={`border-2 border-dashed rounded-xl overflow-hidden aspect-square md:aspect-auto md:h-full flex flex-col items-center justify-center cursor-pointer transition-colors relative ${coverPreview ? 'border-border' : 'hover:bg-muted/50'}`}
                   onClick={() => imageInputRef.current?.click()}
                 >
                   <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageSelect} data-testid="input-cover-file" />
-                  
+
                   {coverPreview ? (
                     <>
                       <img src={coverPreview} alt="Cover preview" className="absolute inset-0 w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setCoverImage(null); setCoverPreview(null); }} data-testid="btn-remove-cover">
-                          Change Image
+                          {t.changeImage}
                         </Button>
                       </div>
                     </>
@@ -209,8 +188,8 @@ export default function AdminUpload() {
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3 mx-auto">
                         <ImageIcon className="w-6 h-6 text-muted-foreground" />
                       </div>
-                      <p className="font-medium text-sm">Click to select cover art</p>
-                      <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WebP up to 5MB</p>
+                      <p className="font-medium text-sm">{t.clickToSelectCover}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t.coverHint}</p>
                     </div>
                   )}
                 </div>
@@ -223,9 +202,9 @@ export default function AdminUpload() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Title</FormLabel>
+                    <FormLabel>{t.titleLabel}</FormLabel>
                     <FormControl>
-                      <Input className="text-lg h-12" placeholder="Episode title" {...field} onChange={e => handleTitleChange(e, field.onChange)} data-testid="input-audio-title" />
+                      <Input className="text-lg h-12" placeholder={t.episodeTitlePlaceholder} {...field} onChange={e => handleTitleChange(e, field.onChange)} data-testid="input-audio-title" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -238,7 +217,7 @@ export default function AdminUpload() {
                   name="slug"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>URL Slug</FormLabel>
+                      <FormLabel>{t.urlSlug}</FormLabel>
                       <FormControl>
                         <Input className="font-mono text-sm" {...field} data-testid="input-audio-slug" />
                       </FormControl>
@@ -252,15 +231,15 @@ export default function AdminUpload() {
                   name="categoryId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel>{t.category}</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-audio-category">
-                            <SelectValue placeholder="Select a category" />
+                            <SelectValue placeholder={t.selectCategory} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="none">{t.none}</SelectItem>
                           {categories?.map(c => (
                             <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
                           ))}
@@ -277,12 +256,12 @@ export default function AdminUpload() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>{t.descriptionLabel}</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Write a description..." 
-                        className="resize-y min-h-[120px] text-base" 
-                        {...field} 
+                      <Textarea
+                        placeholder={t.descriptionPlaceholder}
+                        className="resize-y min-h-[120px] text-base"
+                        {...field}
                         data-testid="input-audio-description"
                       />
                     </FormControl>
@@ -290,7 +269,7 @@ export default function AdminUpload() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-xl border">
                 <FormField
                   control={form.control}
@@ -298,8 +277,8 @@ export default function AdminUpload() {
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg p-3 border bg-card">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Publish immediately</FormLabel>
-                        <FormDescription>Make this audio visible to listeners</FormDescription>
+                        <FormLabel className="text-base">{t.publishImmediately}</FormLabel>
+                        <FormDescription>{t.publishDesc}</FormDescription>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-publish" />
@@ -307,15 +286,15 @@ export default function AdminUpload() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="featured"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg p-3 border bg-card">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Feature on Home</FormLabel>
-                        <FormDescription>Pin this audio to the featured section</FormDescription>
+                        <FormLabel className="text-base">{t.featureOnHome}</FormLabel>
+                        <FormDescription>{t.featureDesc}</FormDescription>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-feature" />
@@ -329,7 +308,7 @@ export default function AdminUpload() {
             <div className="pt-6 border-t flex justify-end">
               <Button type="submit" size="lg" className="px-8" disabled={isUploading} data-testid="btn-submit-upload">
                 {isUploading && <Loader2 className="w-5 h-5 animate-spin mr-2" />}
-                {isUploading ? "Uploading..." : "Save Audio"}
+                {isUploading ? t.uploading : t.saveAudio}
               </Button>
             </div>
           </form>

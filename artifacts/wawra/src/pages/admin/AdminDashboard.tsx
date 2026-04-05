@@ -1,7 +1,7 @@
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useGetAudioStats, useListAudios, useUpdateAudio, getGetAudioStatsQueryKey, getListAudiosQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Headphones, Library, CheckCircle2, Star, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { Headphones, Library, CheckCircle2, Star, MoreHorizontal } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDuration, formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function AdminDashboard() {
+  const { t } = useLanguage();
   const { data: stats, isLoading: statsLoading } = useGetAudioStats();
   const { data: recent, isLoading: recentLoading } = useListAudios({ limit: 10 });
   const updateAudio = useUpdateAudio();
@@ -32,8 +34,8 @@ export default function AdminDashboard() {
     <AdminLayout>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-3xl font-medium tracking-tight mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">Overview of your audio library.</p>
+          <h1 className="font-serif text-3xl font-medium tracking-tight mb-2">{t.dashboardTitle}</h1>
+          <p className="text-muted-foreground">{t.dashboardSubtitle}</p>
         </div>
       </div>
 
@@ -45,42 +47,42 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Audios</CardTitle>
+              <CardTitle className="text-sm font-medium">{t.totalAudios}</CardTitle>
               <Headphones className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-serif">{stats.totalAudios}</div>
-              <p className="text-xs text-muted-foreground mt-1">+{stats.recentUploads} recently uploaded</p>
+              <p className="text-xs text-muted-foreground mt-1">{t.recentlyUploaded(stats.recentUploads)}</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Published</CardTitle>
+              <CardTitle className="text-sm font-medium">{t.published}</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-serif">{stats.publishedAudios}</div>
-              <p className="text-xs text-muted-foreground mt-1">Available to listeners</p>
+              <p className="text-xs text-muted-foreground mt-1">{t.availableToListeners}</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Categories</CardTitle>
+              <CardTitle className="text-sm font-medium">{t.categories}</CardTitle>
               <Library className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-serif">{stats.totalCategories}</div>
-              <p className="text-xs text-muted-foreground mt-1">Active topics</p>
+              <p className="text-xs text-muted-foreground mt-1">{t.activeTopics}</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Featured</CardTitle>
+              <CardTitle className="text-sm font-medium">{t.featuredStat}</CardTitle>
               <Star className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-serif">{stats.featuredAudios}</div>
-              <p className="text-xs text-muted-foreground mt-1">Pinned to homepage</p>
+              <p className="text-xs text-muted-foreground mt-1">{t.pinnedToHomepage}</p>
             </CardContent>
           </Card>
         </div>
@@ -88,16 +90,16 @@ export default function AdminDashboard() {
 
       <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
         <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="font-serif text-xl font-medium tracking-tight">Recent Uploads</h2>
+          <h2 className="font-serif text-xl font-medium tracking-tight">{t.recentUploads}</h2>
         </div>
-        
+
         {recentLoading ? (
           <div className="p-6 space-y-4">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
           </div>
         ) : recent?.items.length === 0 ? (
           <div className="p-12 text-center text-muted-foreground">
-            <p>No audios uploaded yet.</p>
+            <p>{t.noAudiosYet}</p>
           </div>
         ) : (
           <div className="divide-y">
@@ -114,15 +116,15 @@ export default function AdminDashboard() {
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                   <Badge variant={audio.published ? "default" : "secondary"} className="font-normal">
-                    {audio.published ? "Published" : "Draft"}
+                    {audio.published ? t.published : t.draft}
                   </Badge>
                   {audio.featured && (
-                    <Badge variant="outline" className="font-normal border-primary text-primary">Featured</Badge>
+                    <Badge variant="outline" className="font-normal border-primary text-primary">{t.featuredStat}</Badge>
                   )}
-                  
+
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">
@@ -130,22 +132,22 @@ export default function AdminDashboard() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t.actions}</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
-                        <Link href={`/audio/${audio.slug}`} className="cursor-pointer">View Page</Link>
+                        <Link href={`/audio/${audio.slug}`} className="cursor-pointer">{t.viewPage}</Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() => handleToggleStatus(audio.id, audio.published, 'published')}
                       >
-                        {audio.published ? "Unpublish" : "Publish"}
+                        {audio.published ? t.unpublish : t.publish}
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() => handleToggleStatus(audio.id, audio.featured, 'featured')}
                       >
-                        {audio.featured ? "Remove Featured" : "Mark as Featured"}
+                        {audio.featured ? t.removeFeatured : t.markAsFeatured}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
