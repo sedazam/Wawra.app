@@ -11,7 +11,7 @@ export function AudioGrid({ audios, emptyMessage = "No audios found." }: { audio
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    <div className="flex flex-col gap-2">
       {audios.map(audio => (
         <AudioCard key={audio.id} audio={audio} />
       ))}
