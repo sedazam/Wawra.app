@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Wawra"
+version = "1.0.0"
+id = "artifacts/wawra"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18499
+
+[services.development]
+run = "pnpm --filter @workspace/wawra run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/wawra", "run", "build" ]
+publicDir = "artifacts/wawra/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18499"
+BASE_PATH = "/"
